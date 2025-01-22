@@ -26,8 +26,16 @@ def capture_face_samples(user_id, gui_callback=None):
         if len(faces) > 0:
             for (x,y,w,h) in faces:
                 sample_num += 1
+                # 创建用户目录
+                # 创建用户目录
+                user_dir = os.path.join('face_recognition', f'user_{user_id}')
+                if not os.path.exists(user_dir):
+                    os.makedirs(user_dir)
+                
                 # 保存人脸图像
-                cv2.imwrite(f"trainer/User.{user_id}.{sample_num}.jpg", gray[y:y+h,x:x+w])
+                face_img = gray[y:y+h,x:x+w]
+                face_img = cv2.resize(face_img, (200, 200))  # 统一图像尺寸
+                cv2.imwrite(os.path.join(user_dir, f"{user_id}_{sample_num}.jpg"), face_img)
                 cv2.rectangle(img, (x,y), (x+w,y+h), (255,0,0), 2)
                 cv2.putText(img, f"Captured: {sample_num}/50", (10, 30), 
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -57,11 +65,16 @@ def train_recognizer():
     id_map = {}
     current_id = 0
     
-    image_paths = [os.path.join('trainer', f) for f in os.listdir('trainer') if f.endswith('.jpg')]
+    # 获取所有用户照片路径
+    image_paths = []
+    for root, dirs, files in os.walk('face_recognition'):
+        for file in files:
+            if file.endswith('.jpg'):
+                image_paths.append(os.path.join(root, file))
     
     # 创建用户ID映射
     for image_path in image_paths:
-        user_id = os.path.split(image_path)[-1].split('.')[1]
+        user_id = os.path.split(image_path)[-1].split('_')[0]
         if user_id not in id_map:
             id_map[user_id] = current_id
             current_id += 1
@@ -75,7 +88,7 @@ def train_recognizer():
     for image_path in image_paths:
         img = Image.open(image_path).convert('L')
         img_np = np.array(img, 'uint8')
-        user_id = os.path.split(image_path)[-1].split('.')[1]
+        user_id = os.path.split(image_path)[-1].split('_')[0]
         id = id_map[user_id]
         faces.append(img_np)
         ids.append(id)
