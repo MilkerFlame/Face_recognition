@@ -10,13 +10,16 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 if not os.path.exists('trainer'):
     os.makedirs('trainer')
 
-def capture_face_samples(user_id):
+def capture_face_samples(user_id, gui_callback=None):
     """采集人脸样本"""
     cam = cv2.VideoCapture(0)
     sample_num = 0
     
     while True:
         ret, img = cam.read()
+        if not ret:
+            break
+            
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
         
@@ -30,16 +33,20 @@ def capture_face_samples(user_id):
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.waitKey(300)  # 增加延迟以确保不同样本
             
-        cv2.imshow('Capturing Face Samples', img)
-        key = cv2.waitKey(1)
-        if key == 27:  # ESC键退出
-            break
+        if gui_callback:
+            gui_callback(img)
+        else:
+            cv2.imshow('Capturing Face Samples', img)
+            key = cv2.waitKey(1)
+            if key == 27:  # ESC键退出
+                break
         
         if sample_num > 50:  # 增加样本数量到50
             break
             
     cam.release()
-    cv2.destroyAllWindows()
+    if not gui_callback:
+        cv2.destroyAllWindows()
 
 def train_recognizer():
     """训练人脸识别模型"""
